@@ -1,0 +1,35 @@
+# --- Backend (Flask) ---
+server/__pycache__/
+**/__pycache__/
+*.pyc
+# Pipenv keeps its virtual env outside the project folder by default, so
+# these three only matter if someone runs PIPENV_VENV_IN_PROJECT=1 or falls
+# back to a manual `python -m venv venv` - harmless to leave in either way.
+server/venv/
+server/env/
+server/.venv/
+server/gearshift.db
+server/gearshift.db-journal
+server/instance/
+# server/Pipfile and server/Pipfile.lock are NOT ignored - both get committed.
+
+# Uploaded driver-application CVs - real applicants' documents, not demo
+# data, so these never get committed. Flask creates this folder on demand
+# (see routes/driver_applications.py) if it doesn't already exist.
+server/uploads/
+
+# --- Frontend (React/Vite) ---
+client/node_modules/
+client/dist/
+client/dist-ssr/
+
+# --- Env files (never commit real secrets) ---
+.env
+server/.env
+client/.env
+
+# --- OS / editor ---
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea

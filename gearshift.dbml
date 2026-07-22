@@ -1,0 +1,99 @@
+// GearShift DB schema — paste this into dbdiagram.io (https://dbdiagram.io/d)
+
+Table users {
+  id integer [primary key]
+  email varchar [not null, unique]
+  password_hash varchar [not null]
+  role varchar [not null, default: 'client', note: 'client | admin']
+  license_number varchar
+  verification_status varchar [not null, default: 'unverified']
+  rental_intent varchar [not null, default: 'both', note: 'renter | owner | both']
+  rating float [not null, default: 0.0]
+  is_banned boolean [not null, default: false]
+  reset_token varchar
+  reset_token_expiry datetime
+  created_at datetime
+}
+
+Table vehicles {
+  id integer [primary key]
+  make varchar [not null]
+  model varchar [not null]
+  year integer [not null]
+  daily_rate float [not null]
+  location varchar [not null]
+  is_available boolean [not null, default: true]
+  image_url varchar
+  description text
+  category varchar [not null, note: 'SUV, Sedan, Truck, Convertible, Van']
+  condition varchar [not null, default: 'Used', note: 'New | Used']
+  mileage integer [not null, default: 0]
+  fuel_type varchar [not null, default: 'Petrol']
+  transmission varchar [not null, default: 'Automatic']
+  drive varchar [not null, default: 'FWD']
+  exterior_color varchar [not null, default: 'White']
+  is_approved boolean [not null, default: false]
+  owner_id integer [not null, ref: > users.id]
+  created_at datetime
+}
+
+Table features {
+  id integer [primary key]
+  name varchar [not null]
+  icon varchar
+  description varchar
+  category varchar
+}
+
+Table vehicle_features {
+  vehicle_id integer [primary key, ref: > vehicles.id]
+  feature_id integer [primary key, ref: > features.id]
+}
+
+Table drivers {
+  id integer [primary key]
+  name varchar [not null]
+  rating float [not null, default: 4.0]
+  daily_rate float [not null]
+  phone varchar
+  license_number varchar
+  bio varchar
+  is_available boolean [not null, default: true]
+  email varchar [unique]
+  password_hash varchar
+}
+
+Table driver_applications {
+  id integer [primary key]
+  full_name varchar [not null]
+  id_number varchar [not null]
+  email varchar [not null]
+  phone varchar [not null]
+  license_number varchar [not null]
+  preferred_category varchar [not null]
+  cv_filename varchar [not null]
+  cv_original_name varchar
+  status varchar [not null, default: 'pending', note: 'pending | approved | rejected']
+  created_at datetime
+}
+
+Table bookings {
+  id integer [primary key]
+  start_date date [not null]
+  end_date date [not null]
+  total_price float [not null]
+  status varchar [not null, default: 'pending', note: 'pending -> confirmed/cancelled -> active -> completed']
+  created_at datetime
+  notes text
+  review_rating integer [note: '1-5 stars']
+  vehicle_id integer [not null, ref: > vehicles.id]
+  renter_id integer [not null, ref: > users.id]
+  contact_phone varchar [not null]
+  hire_type varchar [not null, default: 'self_drive', note: 'self_drive | chauffeur']
+  driver_id integer [ref: > drivers.id]
+  driver_status varchar [note: 'pending | accepted | declined']
+  event_type varchar [note: 'wedding | funeral | safari | group_transportation | other']
+  is_convoy boolean [not null, default: false]
+  convoy_id varchar [note: 'groups multiple bookings into one convoy']
+  discount_percent float [not null, default: 0.0]
+}
