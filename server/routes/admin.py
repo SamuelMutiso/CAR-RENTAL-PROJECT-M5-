@@ -11,7 +11,7 @@ def stats():
     total_users = User.query.count()
     total_vehicles = Vehicle.query.count()
     total_bookings = Booking.query.count()
-    total_revenue = db.session.query(db.func.coalesce(db.func.sum(Booking.total_price), 0)).filter(Booking.status == 'completed').scalar()
+    total_revenue = db.session.query(db.func.coalesce(db.func.sum(Booking.total_price), 0)).filter(Booking.status.in_(['confirmed', 'active', 'completed'])).scalar()
     return (jsonify({'total_users': total_users, 'total_vehicles': total_vehicles, 'total_bookings': total_bookings, 'total_revenue': total_revenue}), 200)
 
 @admin_bp.route('/admin/users', methods=['GET'])

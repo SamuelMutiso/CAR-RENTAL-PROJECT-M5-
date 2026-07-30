@@ -58,3 +58,25 @@ def driver_login():
 @driver_required
 def get_driver_me():
     return (jsonify(driver_schema.dump(g.current_driver)), 200)
+
+@drivers_bp.route('/driver/password', methods=['PUT'])
+@driver_required
+def change_driver_password():
+    try:
+        data = request.get_json() or {}
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        if not current_password or not new_password:
+            return (jsonify({'error': 'current_password and new_password are required'}), 400)
+        if len(new_password) < 5:
+            return (jsonify({'errors': {'new_password': ['Password must be at least 5 characters']}}), 400)
+        driver = g.current_driver
+        if not driver.password_hash or not bcrypt.check_password_hash(driver.password_hash, current_password):
+            return (jsonify({'error': 'Current password is incorrect'}), 401)
+        driver.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        db.session.commit()
+        return (jsonify({'message': 'Password updated successfully'}), 200)
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Change driver password error: {e}')
+        return (jsonify({'error': 'Internal server error'}), 500)

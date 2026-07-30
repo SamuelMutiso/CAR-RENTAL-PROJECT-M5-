@@ -37,6 +37,7 @@ export default function BookingNew() {
       setDriverDailyRate(0);
     }
   }, [hireType, driverId]);
+  const today = new Date().toISOString().slice(0, 10);
   const days = startDate && endDate ? Math.max(0, Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))) : 0;
   const vehicleCost = vehicle ? days * vehicle.daily_rate : 0;
   const driverCost = hireType === "chauffeur" ? days * driverDailyRate : 0;
@@ -91,11 +92,11 @@ export default function BookingNew() {
         <div className="grid gap-gutter sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Start date</label>
-            <input type="date" required value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field" />
+            <input type="date" required min={today} value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field" />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">End date</label>
-            <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field" />
+            <input type="date" required min={startDate || today} value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field" />
           </div>
         </div>
 

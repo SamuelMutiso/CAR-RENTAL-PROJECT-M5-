@@ -79,6 +79,7 @@ export default function EventBooking() {
   function driverIdsUsedByOthers(currentVehicleId) {
     return Object.entries(selections).filter(([vid, sel]) => Number(vid) !== currentVehicleId && sel.hireType === "chauffeur" && sel.driverId).map(([, sel]) => sel.driverId);
   }
+  const today = new Date().toISOString().slice(0, 10);
   const days = startDate && endDate ? Math.max(0, Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))) : 0;
   const {
     subtotal,
@@ -212,11 +213,11 @@ export default function EventBooking() {
             <div className="grid gap-gutter sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium">Start date</label>
-                <input type="date" required value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field" />
+                <input type="date" required min={today} value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field" />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">End date</label>
-                <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field" />
+                <input type="date" required min={startDate || today} value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field" />
               </div>
             </div>
 

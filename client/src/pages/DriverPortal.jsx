@@ -14,6 +14,13 @@ export default function DriverPortal() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actingOn, setActingOn] = useState(null);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   function load() {
     setLoading(true);
     driverApi.get("/driver/bookings").then(res => setBookings(res.data)).finally(() => setLoading(false));
@@ -34,6 +41,31 @@ export default function DriverPortal() {
     driverLogout();
     navigate("/driver-login");
   }
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    setChangingPassword(true);
+    setPasswordError("");
+    setPasswordMessage("");
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirmation don't match");
+      setChangingPassword(false);
+      return;
+    }
+    try {
+      await driverApi.put("/driver/password", {
+        current_password: currentPassword,
+        new_password: newPassword
+      });
+      setPasswordMessage("Password updated");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPasswordError(err.response?.data?.error || err.response?.data?.errors?.new_password?.[0] || "Could not update password");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
   const pending = bookings.filter(b => b.driver_status === "pending");
   const responded = bookings.filter(b => b.driver_status !== "pending");
   return <div className="section-wrap py-section">
@@ -42,8 +74,43 @@ export default function DriverPortal() {
           <h1 className="text-3xl">Welcome, {driver?.name}</h1>
           <RatingStars rating={driver?.rating || 0} />
         </div>
-        <button onClick={handleLogout} className="btn-secondary">Log out</button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowPasswordForm(v => !v)} className="btn-secondary">
+            {showPasswordForm ? "Close" : "Change password"}
+          </button>
+          <button onClick={handleLogout} className="btn-secondary">Log out</button>
+        </div>
       </div>
+
+      {showPasswordForm && <div className="mb-gutter-lg card space-y-gutter p-gutter-lg">
+          <div>
+            <h2 className="text-lg font-semibold">Change password</h2>
+            <p className="text-sm text-brand-navy/60">Logging in with a default password? Set your own here.</p>
+          </div>
+
+          {passwordMessage && <p className="rounded-card bg-green-50 px-4 py-2.5 text-sm text-green-700">{passwordMessage}</p>}
+          {passwordError && <p className="rounded-card bg-red-50 px-4 py-2.5 text-sm text-red-700">{passwordError}</p>}
+
+          <form onSubmit={handleChangePassword} className="space-y-gutter">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Current password</label>
+              <input type="password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="input-field" />
+            </div>
+            <div className="grid gap-gutter sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium">New password</label>
+                <input type="password" required minLength={5} value={newPassword} onChange={e => setNewPassword(e.target.value)} className="input-field" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Confirm new password</label>
+                <input type="password" required minLength={5} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="input-field" />
+              </div>
+            </div>
+            <button type="submit" disabled={changingPassword} className="btn-primary">
+              {changingPassword ? "Updating..." : "Update password"}
+            </button>
+          </form>
+        </div>}
 
       {loading ? <LoadingSpinner label="Loading your jobs..." /> : <div className="space-y-gutter-lg">
           <section>

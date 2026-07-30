@@ -96,14 +96,14 @@ export default function Services() {
         <div className="section-wrap grid items-center gap-gutter-lg py-section sm:grid-cols-2">
           <img src={IMAGES.interior} alt="Premium interior" className="h-80 w-full rounded-card object-cover shadow-card sm:h-[420px]" />
           <div>
-            <h2 className="mb-gutter-lg text-3xl">The Difference In Excellence</h2>
+            <h2 className="mb-gutter-lg text-3xl text-white">The Difference In Excellence</h2>
             <div className="space-y-gutter">
               {EXCELLENCE.map(item => <div key={item.title} className="flex gap-3">
                   <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-accent text-accent">
                     &#9679;
                   </div>
                   <div>
-                    <h3 className="font-semibold">{item.title}</h3>
+                    <h3 className="font-semibold text-white">{item.title}</h3>
                     <p className="text-sm text-white/70">{item.body}</p>
                   </div>
                 </div>)}
@@ -129,7 +129,7 @@ export default function Services() {
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-accent-light">
                   Step {i + 1}
                 </p>
-                <h3 className="mb-1 text-xl">{step.title}</h3>
+                <h3 className="mb-1 text-xl text-white">{step.title}</h3>
                 <p className="text-sm text-white/80">{step.body}</p>
               </div>
             </div>)}

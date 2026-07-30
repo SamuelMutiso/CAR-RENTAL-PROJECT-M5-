@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from flask import Blueprint, request, jsonify, g
 from extensions import db, logger
 from models import Booking, Vehicle, User, Driver
@@ -31,6 +32,8 @@ def create_booking():
             return (jsonify({'error': 'Vehicle not available'}), 404)
         start = parse_date(start_date)
         end = parse_date(end_date)
+        if start < date.today():
+            return (jsonify({'error': 'start_date cannot be in the past'}), 400)
         if end <= start:
             return (jsonify({'error': 'end_date must be after start_date'}), 400)
         driver = None
@@ -78,6 +81,8 @@ def create_convoy_booking():
             return (jsonify({'error': 'contact_phone must be in the format +254 followed by 9 digits, e.g. +254795038762'}), 400)
         start = parse_date(start_date)
         end = parse_date(end_date)
+        if start < date.today():
+            return (jsonify({'error': 'start_date cannot be in the past'}), 400)
         if end <= start:
             return (jsonify({'error': 'end_date must be after start_date'}), 400)
         days = (end - start).days
