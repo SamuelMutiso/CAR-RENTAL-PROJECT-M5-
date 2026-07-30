@@ -42,6 +42,7 @@ export default function AdminBookings() {
               <th className="px-4 py-3">Renter</th>
               <th className="px-4 py-3">Dates</th>
               <th className="px-4 py-3">Price</th>
+              <th className="px-4 py-3">Payment</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
@@ -52,6 +53,9 @@ export default function AdminBookings() {
                 <td className="px-4 py-3">{b.renter_name}</td>
                 <td className="px-4 py-3">{b.start_date} &rarr; {b.end_date}</td>
                 <td className="px-4 py-3">KES {Number(b.total_price).toLocaleString()}</td>
+                <td className="px-4 py-3">
+                  {b.payment_status === "paid" ? <span className="text-xs font-semibold text-green-700">Paid (M-Pesa)</span> : <span className="text-xs font-semibold text-amber-700">Pending</span>}
+                </td>
                 <td className="px-4 py-3"><StatusBadge status={b.status} /></td>
                 <td className="space-x-3 px-4 py-3">
                   {b.status === "pending" && <>

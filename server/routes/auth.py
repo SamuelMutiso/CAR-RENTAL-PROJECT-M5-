@@ -2,6 +2,8 @@ import secrets
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, g
 import jwt
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 from extensions import db, bcrypt, logger
@@ -61,6 +63,39 @@ def login():
         return (jsonify({'token': token, 'user': user_schema.dump(user)}), 200)
     except Exception as e:
         logger.error(f'Login error: {e}')
+        return (jsonify({'error': 'Internal server error'}), 500)
+
+@auth_bp.route('/auth/google', methods=['POST'])
+def google_login():
+    try:
+        data = request.get_json() or {}
+        credential = data.get('credential')
+        if not credential:
+            return (jsonify({'error': 'credential is required'}), 400)
+        if not Config.GOOGLE_CLIENT_ID:
+            return (jsonify({'error': 'Google sign-in is not configured on this server'}), 500)
+        try:
+            idinfo = google_id_token.verify_oauth2_token(credential, google_requests.Request(), Config.GOOGLE_CLIENT_ID)
+        except ValueError:
+            return (jsonify({'error': 'Invalid Google credential'}), 401)
+        if not idinfo.get('email_verified', False):
+            return (jsonify({'error': 'Google email is not verified'}), 401)
+        email = (idinfo.get('email') or '').strip().lower()
+        if not email:
+            return (jsonify({'error': 'Google account has no email'}), 400)
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            password_hash = bcrypt.generate_password_hash(secrets.token_urlsafe(24)).decode('utf-8')
+            user = User(email=email, password_hash=password_hash, role='client', rental_intent='both', verification_status='verified')
+            db.session.add(user)
+            db.session.commit()
+        if user.is_banned:
+            return (jsonify({'error': 'This account has been banned'}), 403)
+        token = _make_token(user)
+        return (jsonify({'token': token, 'user': user_schema.dump(user)}), 200)
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Google login error: {e}')
         return (jsonify({'error': 'Internal server error'}), 500)
 
 @auth_bp.route('/me', methods=['GET'])

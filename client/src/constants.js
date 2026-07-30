@@ -260,6 +260,10 @@ export const PHONE_REGEX = /^\+254\d{9}$/;
 export function isValidKenyanPhone(value) {
   return PHONE_REGEX.test(value || "");
 }
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export function isValidEmail(value) {
+  return EMAIL_REGEX.test((value || "").trim());
+}
 export const BOOKING_STATUS_STYLES = {
   pending: "bg-amber-100 text-amber-800",
   confirmed: "bg-green-100 text-green-800",

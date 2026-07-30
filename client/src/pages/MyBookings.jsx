@@ -57,6 +57,7 @@ export default function MyBookings() {
                   KES {Number(b.total_price).toLocaleString()}
                   {b.discount_percent > 0 && <span className="ml-1 text-xs font-normal text-green-700">({b.discount_percent}% convoy discount applied)</span>}
                 </p>
+                {b.payment_status === "paid" ? <p className="text-xs font-medium text-green-700">Paid via M-Pesa{b.mpesa_phone ? ` · ${b.mpesa_phone}` : ""}</p> : <p className="text-xs font-medium text-amber-700">Payment pending</p>}
               </div>
 
               <div className="flex items-center gap-gutter">

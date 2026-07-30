@@ -21,6 +21,11 @@ def create_booking():
         hire_type = data.get('hire_type', 'self_drive')
         driver_id = data.get('driver_id')
         contact_phone = data.get('contact_phone')
+        payment_method = data.get('payment_method', 'mpesa')
+        if payment_method not in ('mpesa', 'cash'):
+            payment_method = 'mpesa'
+        payment_status = 'paid' if data.get('payment_status') == 'paid' else 'pending'
+        mpesa_phone = data.get('mpesa_phone') if payment_method == 'mpesa' else None
         if not (vehicle_id and start_date and end_date):
             return (jsonify({'error': 'vehicle_id, start_date and end_date are required'}), 400)
         if not valid_phone(contact_phone):
@@ -49,7 +54,7 @@ def create_booking():
             return (jsonify({'error': 'Vehicle not available for these dates'}), 409)
         days = (end - start).days
         total_price = price_for_vehicle(vehicle, driver, days)
-        booking = Booking(vehicle_id=vehicle_id, renter_id=g.current_user.id, start_date=start, end_date=end, total_price=total_price, notes=data.get('notes'), status='pending', hire_type=hire_type, driver_id=driver.id if driver else None, driver_status='pending' if driver else None, contact_phone=contact_phone)
+        booking = Booking(vehicle_id=vehicle_id, renter_id=g.current_user.id, start_date=start, end_date=end, total_price=total_price, notes=data.get('notes'), status='pending', hire_type=hire_type, driver_id=driver.id if driver else None, driver_status='pending' if driver else None, contact_phone=contact_phone, payment_method=payment_method, payment_status=payment_status, mpesa_phone=mpesa_phone)
         db.session.add(booking)
         db.session.commit()
         return (jsonify(booking_schema.dump(booking)), 201)
@@ -68,6 +73,11 @@ def create_convoy_booking():
         end_date = data.get('end_date')
         contact_phone = data.get('contact_phone')
         vehicles_payload = data.get('vehicles') or []
+        payment_method = data.get('payment_method', 'mpesa')
+        if payment_method not in ('mpesa', 'cash'):
+            payment_method = 'mpesa'
+        payment_status = 'paid' if data.get('payment_status') == 'paid' else 'pending'
+        mpesa_phone = data.get('mpesa_phone') if payment_method == 'mpesa' else None
         if event_type not in VALID_EVENT_TYPES:
             event_type = 'other'
         traveller_service = None
@@ -117,7 +127,7 @@ def create_convoy_booking():
         created = []
         for (vehicle, driver, hire_type) in resolved:
             base_price = price_for_vehicle(vehicle, driver, days)
-            booking = Booking(vehicle_id=vehicle.id, renter_id=g.current_user.id, start_date=start, end_date=end, total_price=round(base_price * (1 - discount), 2), notes=data.get('notes'), status='pending', hire_type=hire_type, driver_id=driver.id if driver else None, driver_status='pending' if driver else None, contact_phone=contact_phone, event_type=event_type, is_convoy=True, convoy_id=convoy_id, discount_percent=discount * 100, traveller_service=traveller_service, pickup_location=pickup_location, dropoff_location=dropoff_location, meet_and_greet=meet_and_greet)
+            booking = Booking(vehicle_id=vehicle.id, renter_id=g.current_user.id, start_date=start, end_date=end, total_price=round(base_price * (1 - discount), 2), notes=data.get('notes'), status='pending', hire_type=hire_type, driver_id=driver.id if driver else None, driver_status='pending' if driver else None, contact_phone=contact_phone, event_type=event_type, is_convoy=True, convoy_id=convoy_id, discount_percent=discount * 100, traveller_service=traveller_service, pickup_location=pickup_location, dropoff_location=dropoff_location, meet_and_greet=meet_and_greet, payment_method=payment_method, payment_status=payment_status, mpesa_phone=mpesa_phone)
             db.session.add(booking)
             created.append(booking)
         db.session.commit()

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DriverPicker from "../components/DriverPicker";
+import MpesaPaymentModal from "../components/MpesaPaymentModal";
 import { EVENT_TYPES, EVENT_SUGGESTED_CATEGORIES, EVENT_THEMES, TRAVELLER_SERVICES, previewConvoyDiscount, isValidKenyanPhone } from "../constants";
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80";
 export default function EventBooking() {
@@ -23,6 +24,7 @@ export default function EventBooking() {
   const [selections, setSelections] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   useEffect(() => {
     setLoadingVehicles(true);
     api.get("/vehicles", {
@@ -102,7 +104,7 @@ export default function EventBooking() {
       total: sub * (1 - disc)
     };
   }, [selectedVehicles, days]);
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
     setError("");
     if (selectedVehicles.length === 0) {
@@ -133,7 +135,12 @@ export default function EventBooking() {
         return;
       }
     }
+    setShowPayment(true);
+  }
+  const completeBooking = useCallback(async mpesaPhone => {
+    setShowPayment(false);
     setSubmitting(true);
+    setError("");
     try {
       await api.post("/bookings/convoy", {
         event_type: eventType,
@@ -141,6 +148,9 @@ export default function EventBooking() {
         end_date: endDate,
         notes,
         contact_phone: contactPhone,
+        payment_method: "mpesa",
+        payment_status: "paid",
+        mpesa_phone: mpesaPhone,
         ...(eventType === "international_traveller" && {
           traveller_service: travellerService,
           pickup_location: pickupLocation || null,
@@ -163,7 +173,7 @@ export default function EventBooking() {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [eventType, startDate, endDate, notes, contactPhone, travellerService, pickupLocation, dropoffLocation, meetAndGreet, selectedVehicles, selections, navigate]);
   return <div>
       
       <div className="relative overflow-hidden bg-cover" style={{
@@ -338,9 +348,11 @@ export default function EventBooking() {
           </label>
 
           <button type="submit" disabled={submitting} className="btn-primary w-full">
-            {submitting ? "Booking your convoy..." : "Book this convoy"}
+            {submitting ? "Booking your convoy..." : total > 0 ? `Pay KES ${total.toLocaleString()} with M-Pesa` : "Book this convoy"}
           </button>
         </form>
       </div>
+
+      <MpesaPaymentModal open={showPayment} amount={total} defaultPhone={contactPhone} onClose={() => setShowPayment(false)} onSuccess={completeBooking} />
     </div>;
 }

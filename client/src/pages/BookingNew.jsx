@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import api from "../api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DriverPicker from "../components/DriverPicker";
+import MpesaPaymentModal from "../components/MpesaPaymentModal";
 import { isValidKenyanPhone } from "../constants";
 export default function BookingNew() {
   const {
@@ -22,6 +23,7 @@ export default function BookingNew() {
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   useEffect(() => {
     if (!vehicle) {
       api.get(`/vehicles/${id}`).then(res => setVehicle(res.data)).finally(() => setLoading(false));
@@ -42,7 +44,7 @@ export default function BookingNew() {
   const vehicleCost = vehicle ? days * vehicle.daily_rate : 0;
   const driverCost = hireType === "chauffeur" ? days * driverDailyRate : 0;
   const totalPrice = vehicleCost + driverCost;
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
     setError("");
     if (!isValidKenyanPhone(contactPhone)) {
@@ -53,7 +55,12 @@ export default function BookingNew() {
       setError("You must accept the damage liability disclaimer to continue.");
       return;
     }
+    setShowPayment(true);
+  }
+  const completeBooking = useCallback(async mpesaPhone => {
+    setShowPayment(false);
     setSubmitting(true);
+    setError("");
     try {
       await api.post("/bookings", {
         vehicle_id: Number(id),
@@ -62,7 +69,10 @@ export default function BookingNew() {
         notes,
         hire_type: hireType,
         driver_id: hireType === "chauffeur" ? driverId : null,
-        contact_phone: contactPhone
+        contact_phone: contactPhone,
+        payment_method: "mpesa",
+        payment_status: "paid",
+        mpesa_phone: mpesaPhone
       });
       navigate("/bookings", {
         state: {
@@ -78,7 +88,7 @@ export default function BookingNew() {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [id, startDate, endDate, notes, hireType, driverId, contactPhone, navigate]);
   if (loading) return <LoadingSpinner label="Loading vehicle..." />;
   if (!vehicle) return <p className="section-wrap py-section text-brand-navy/60">Vehicle not found.</p>;
   return <div className="section-wrap max-w-xl py-section">
@@ -137,8 +147,10 @@ export default function BookingNew() {
         </label>
 
         <button type="submit" disabled={submitting || days <= 0 || hireType === "chauffeur" && !driverId} className="btn-primary w-full">
-          {submitting ? "Booking..." : "Book now"}
+          {submitting ? "Booking..." : `Pay KES ${totalPrice.toLocaleString()} with M-Pesa`}
         </button>
       </form>
+
+      <MpesaPaymentModal open={showPayment} amount={totalPrice} defaultPhone={contactPhone} onClose={() => setShowPayment(false)} onSuccess={completeBooking} />
     </div>;
 }

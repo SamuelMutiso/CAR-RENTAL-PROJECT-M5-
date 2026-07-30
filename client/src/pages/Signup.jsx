@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
-import { AUTH_BG_IMAGES } from "../constants";
+import GoogleSignInButton from "../components/GoogleSignInButton";
+import { AUTH_BG_IMAGES, isValidEmail } from "../constants";
 const INTENT_OPTIONS = [{
   value: "renter",
   label: "Rent cars"
@@ -15,6 +16,7 @@ const INTENT_OPTIONS = [{
 }];
 export default function Signup() {
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [intent, setIntent] = useState("both");
@@ -24,9 +26,15 @@ export default function Signup() {
     login
   } = useAuth();
   const navigate = useNavigate();
+  const emailInvalid = emailTouched && email.length > 0 && !isValidEmail(email);
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setEmailTouched(true);
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address, e.g. name@example.com");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -42,10 +50,15 @@ export default function Signup() {
       login(res.data.user, res.data.token);
       navigate("/profile");
     } catch (err) {
-      setError(err.response?.data?.error || "Signup failed. Please try again.");
+      const fieldError = err.response?.data?.errors?.email?.[0];
+      setError(fieldError || err.response?.data?.error || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+  function handleGoogleSuccess(user, token) {
+    login(user, token);
+    navigate("/profile");
   }
   return <div className="relative min-h-[80vh] overflow-hidden">
       
@@ -65,7 +78,8 @@ export default function Signup() {
           <form onSubmit={handleSubmit} className="space-y-gutter">
             <div>
               <label className="mb-1 block text-sm font-medium">Email</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input-field" />
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} onBlur={() => setEmailTouched(true)} className={`input-field ${emailInvalid ? "border-red-400 focus:ring-red-400" : ""}`} aria-invalid={emailInvalid} />
+              {emailInvalid && <p className="mt-1 text-xs text-red-600">Enter a valid email address, e.g. name@example.com</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Password</label>
@@ -87,6 +101,8 @@ export default function Signup() {
               {loading ? "Creating account..." : "Sign up"}
             </button>
           </form>
+
+          <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={setError} />
 
           <p className="text-sm text-brand-navy/60">
             Already have an account? <Link to="/login" className="text-accent hover:underline">Log in</Link>
