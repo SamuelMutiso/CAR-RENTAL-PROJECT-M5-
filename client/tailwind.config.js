@@ -20,7 +20,7 @@ export default {
       },
       fontFamily: {
         display: ["\"Space Grotesk\"", "sans-serif"],
-        sans: ["Inter", "sans-serif"],
+        sans: ["\"Work Sans\"", "sans-serif"],
         serif: ["\"Playfair Display\"", "serif"]
       },
       spacing: {
