@@ -6,6 +6,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(120), nullable=True)
+    phone = db.Column(db.String(20), nullable=True)
     role = db.Column(db.String(20), nullable=False, default='client')
     license_number = db.Column(db.String(50), nullable=True)
     verification_status = db.Column(db.String(20), nullable=False, default='unverified')
@@ -19,7 +21,7 @@ class User(db.Model):
     bookings = db.relationship('Booking', backref='renter', lazy=True, cascade='all, delete-orphan')
 
     def to_dict(self):
-        return {'id': self.id, 'email': self.email, 'role': self.role, 'license_number': self.license_number, 'rental_intent': self.rental_intent, 'verification_status': self.verification_status, 'rating': self.rating, 'is_banned': self.is_banned, 'created_at': self.created_at.isoformat() if self.created_at else None}
+        return {'id': self.id, 'email': self.email, 'name': self.name, 'phone': self.phone, 'role': self.role, 'license_number': self.license_number, 'rental_intent': self.rental_intent, 'verification_status': self.verification_status, 'rating': self.rating, 'is_banned': self.is_banned, 'created_at': self.created_at.isoformat() if self.created_at else None}
 
     def __repr__(self):
         return f'<User {self.id} {self.email} ({self.role})>'

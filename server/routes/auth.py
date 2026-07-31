@@ -30,7 +30,7 @@ def register():
         if User.query.filter_by(email=email).first():
             return (jsonify({'errors': {'email': ['An account with that email already exists']}}), 409)
         password_hash = bcrypt.generate_password_hash(validated_data['password']).decode('utf-8')
-        user = User(email=email, password_hash=password_hash, role=validated_data.get('role', 'client'), rental_intent=validated_data.get('rental_intent', 'both'))
+        user = User(email=email, password_hash=password_hash, name=validated_data.get('name', '').strip(), phone=validated_data.get('phone'), role=validated_data.get('role', 'client'), rental_intent=validated_data.get('rental_intent', 'both'))
         db.session.add(user)
         db.session.commit()
         token = _make_token(user)
@@ -109,6 +109,10 @@ def update_me():
     try:
         data = request.get_json() or {}
         user = g.current_user
+        if 'name' in data:
+            user.name = (data['name'] or '').strip() or None
+        if 'phone' in data:
+            user.phone = (data['phone'] or '').strip() or None
         if 'license_number' in data:
             user.license_number = data['license_number']
         if 'rental_intent' in data and data['rental_intent'] in ('renter', 'owner', 'both'):

@@ -5,3 +5,4 @@ from .driver_schema import driver_schema, drivers_schema
 from .driver_application_schema import driver_application_schema, driver_applications_schema, driver_application_input_schema
 from .contact_message_schema import contact_message_schema, contact_messages_schema, contact_message_input_schema
 from .feature_schema import feature_schema, features_schema
+from .notification_schema import notification_schema, notifications_schema

@@ -18,6 +18,7 @@ def create_app():
     from routes.bookings import bookings_bp
     from routes.admin import admin_bp
     from routes.contact import contact_bp
+    from routes.notifications import notifications_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(features_bp)
@@ -26,6 +27,7 @@ def create_app():
     app.register_blueprint(bookings_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(contact_bp)
+    app.register_blueprint(notifications_bp)
 
     @app.route('/')
     def health_check():

@@ -30,7 +30,9 @@ class BookingSchema(ma.SQLAlchemyAutoSchema):
         return booking.vehicle.daily_rate if booking.vehicle else None
 
     def get_renter_name(self, booking):
-        return booking.renter.email.split('@')[0] if booking.renter else None
+        if not booking.renter:
+            return None
+        return booking.renter.name or booking.renter.email.split('@')[0]
 
     def get_owner_id(self, booking):
         return booking.vehicle.owner_id if booking.vehicle else None

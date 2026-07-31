@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from flask import Blueprint, request, jsonify, g
 from extensions import db, logger
-from models import Booking, Vehicle, User, Driver
+from models import Booking, Vehicle, User, Driver, Notification
 from schemas import booking_schema, bookings_schema
 from utils.decorators import jwt_required, admin_required, driver_required
 from utils.booking_helpers import parse_date, valid_phone, convoy_discount, has_conflict, driver_has_conflict, price_for_vehicle
@@ -245,6 +245,16 @@ def respond_to_booking(booking_id):
         if new_status not in ('accepted', 'declined'):
             return (jsonify({'error': "driver_status must be 'accepted' or 'declined'"}), 400)
         booking.driver_status = new_status
+        vehicle_label = f'{booking.vehicle.make} {booking.vehicle.model}' if booking.vehicle else 'your vehicle'
+        driver_name = g.current_driver.name
+        if new_status == 'accepted':
+            title = 'Chauffeur confirmed'
+            message = f'{driver_name} has accepted your booking for the {vehicle_label} ({booking.start_date.isoformat()} to {booking.end_date.isoformat()}).'
+        else:
+            title = 'Chauffeur unavailable'
+            message = f'{driver_name} declined your booking for the {vehicle_label}. Please pick another chauffeur or contact support.'
+        notification = Notification(user_id=booking.renter_id, type=f'booking_{new_status}', title=title, message=message, booking_id=booking.id, simulated_email_sent=True, simulated_sms_sent=bool(booking.contact_phone))
+        db.session.add(notification)
         db.session.commit()
         return (jsonify(booking_schema.dump(booking)), 200)
     except Exception as e:

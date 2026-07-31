@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from extensions import db, logger
 from models import User, Vehicle, Booking
 from utils.decorators import admin_required
@@ -35,11 +35,19 @@ def update_user(user_id):
         if not user:
             return (jsonify({'error': 'User not found'}), 404)
         data = request.get_json() or {}
+        is_self = user.id == g.current_user.id
+        owns_vehicles = len(user.vehicles) > 0
         if 'is_banned' in data:
+            if is_self and bool(data['is_banned']):
+                return (jsonify({'error': "You can't ban your own admin account"}), 400)
+            if owns_vehicles and bool(data['is_banned']):
+                return (jsonify({'error': 'This user owns active vehicle listings - banning them would block bookings on those cars'}), 400)
             user.is_banned = bool(data['is_banned'])
         if 'verification_status' in data:
             user.verification_status = data['verification_status']
         if 'role' in data and data['role'] in ('client', 'admin'):
+            if is_self and data['role'] != 'admin':
+                return (jsonify({'error': "You can't remove your own admin role"}), 400)
             user.role = data['role']
         db.session.commit()
         return (jsonify(user_schema.dump(user)), 200)
@@ -55,6 +63,10 @@ def delete_user(user_id):
         user = db.session.get(User, user_id)
         if not user:
             return (jsonify({'error': 'User not found'}), 404)
+        if user.id == g.current_user.id:
+            return (jsonify({'error': "You can't delete your own admin account"}), 400)
+        if len(user.vehicles) > 0:
+            return (jsonify({'error': 'This user owns vehicle listings - deleting them would remove those listings and any bookings on them'}), 400)
         db.session.delete(user)
         db.session.commit()
         return (jsonify({'message': 'User and their listings/bookings deleted'}), 200)
