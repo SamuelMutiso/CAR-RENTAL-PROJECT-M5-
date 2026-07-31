@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
+import PasswordInput from "../components/PasswordInput";
 import { LOGIN_BG_IMAGE, isValidEmail } from "../constants";
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -72,7 +73,7 @@ export default function Login() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Password</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input-field" placeholder="••••••••" />
+            <PasswordInput required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Logging in..." : "Log in"}

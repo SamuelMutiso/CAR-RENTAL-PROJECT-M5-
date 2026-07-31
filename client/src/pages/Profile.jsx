@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import RatingStars from "../components/RatingStars";
+import PasswordInput from "../components/PasswordInput";
 export default function Profile() {
   const {
     user,
@@ -125,16 +126,16 @@ export default function Profile() {
         <form onSubmit={handleChangePassword} className="space-y-gutter">
           <div>
             <label className="mb-1 block text-sm font-medium">Current password</label>
-            <input type="password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="input-field" />
+            <PasswordInput required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
           </div>
           <div className="grid gap-gutter sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium">New password</label>
-              <input type="password" required minLength={5} value={newPassword} onChange={e => setNewPassword(e.target.value)} className="input-field" />
+              <PasswordInput required minLength={5} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Confirm new password</label>
-              <input type="password" required minLength={5} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="input-field" />
+              <PasswordInput required minLength={5} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </div>
           </div>
           <button type="submit" disabled={changingPassword} className="btn-primary">

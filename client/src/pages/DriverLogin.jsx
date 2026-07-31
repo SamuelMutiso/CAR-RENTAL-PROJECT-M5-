@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { driverApi } from "../api";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 export default function DriverLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +52,7 @@ export default function DriverLogin() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Password</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input-field" />
+            <PasswordInput required value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Logging in..." : "Log in"}

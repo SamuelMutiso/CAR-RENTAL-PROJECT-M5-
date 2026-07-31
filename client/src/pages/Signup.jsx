@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
+import PasswordInput from "../components/PasswordInput";
 import { AUTH_BG_IMAGES, isValidEmail } from "../constants";
 const INTENT_OPTIONS = [{
   value: "renter",
@@ -83,11 +84,11 @@ export default function Signup() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Password</label>
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input-field" />
+              <PasswordInput required value={password} onChange={e => setPassword(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Confirm password</label>
-              <input type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="input-field" />
+              <PasswordInput required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">I want to</label>

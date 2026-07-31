@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api";
+import PasswordInput from "../components/PasswordInput";
 export default function ResetPassword() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
@@ -71,7 +72,7 @@ export default function ResetPassword() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">New password</label>
-              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} className="input-field" />
+              <PasswordInput required value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? "Updating..." : "Update password"}
