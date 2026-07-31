@@ -9,6 +9,44 @@ from utils.booking_helpers import parse_date, valid_phone, convoy_discount, has_
 bookings_bp = Blueprint('bookings', __name__)
 VALID_EVENT_TYPES = ('wedding', 'funeral', 'safari', 'group_transportation', 'international_traveller', 'other')
 VALID_TRAVELLER_SERVICES = ('airport_pickup', 'airport_dropoff', 'round_trip', 'hotel_transfer', 'tourist_transfer', 'multi_day_driver', 'multi_destination')
+REFUND_POLICY_TEXT = ('Cancellation & refund policy: bookings cancelled before the pickup date are fully refunded. '
+                       'Cancelling on the pickup day itself incurs a 10% cancellation fee. '
+                       'Once the vehicle has been picked up, the booking is non-refundable.')
+
+def _send_confirmation_receipt(booking):
+    vehicle_label = f'{booking.vehicle.make} {booking.vehicle.model}' if booking.vehicle else 'your vehicle'
+    days = (booking.end_date - booking.start_date).days if booking.start_date and booking.end_date else None
+    daily_rate = booking.vehicle.daily_rate if booking.vehicle else None
+    payment_label = 'M-Pesa' if booking.payment_method == 'mpesa' else booking.payment_method
+    confirm_message = f'Your booking for the {vehicle_label} ({booking.start_date.isoformat()} to {booking.end_date.isoformat()}) has been confirmed. Get ready for pickup!'
+    receipt_lines = [
+        f'Receipt for Booking #{booking.id}',
+        f'Vehicle: {vehicle_label}',
+        f'Dates: {booking.start_date.isoformat()} to {booking.end_date.isoformat()}' + (f' ({days} day(s))' if days else ''),
+    ]
+    if daily_rate:
+        receipt_lines.append(f'Daily rate: KES {daily_rate:,.0f}')
+    if booking.discount_percent:
+        receipt_lines.append(f'Discount applied: {booking.discount_percent:.0f}%')
+    receipt_lines.append(f'Total paid: KES {booking.total_price:,.0f}')
+    receipt_lines.append(f'Payment method: {payment_label}')
+    receipt_lines.append(f'Payment status: {"Paid" if booking.payment_status == "paid" else "Pending"}')
+    if booking.mpesa_phone:
+        receipt_lines.append(f'M-Pesa number: {booking.mpesa_phone}')
+    receipt_lines.append('')
+    receipt_lines.append(REFUND_POLICY_TEXT)
+    db.session.add(Notification(user_id=booking.renter_id, type='booking_confirmed', title='Booking confirmed', message=confirm_message, booking_id=booking.id, simulated_email_sent=True, simulated_sms_sent=bool(booking.contact_phone)))
+    db.session.add(Notification(user_id=booking.renter_id, type='receipt', title=f'Payment receipt - Booking #{booking.id}', message='\n'.join(receipt_lines), booking_id=booking.id, simulated_email_sent=True))
+
+def _send_cancellation_notice(booking):
+    vehicle_label = f'{booking.vehicle.make} {booking.vehicle.model}' if booking.vehicle else 'your vehicle'
+    if booking.cancellation_penalty_percent and booking.cancellation_penalty_percent > 0:
+        message = (f'Your booking for the {vehicle_label} was cancelled on the pickup day, so a '
+                    f'{booking.cancellation_penalty_percent:.0f}% cancellation fee applies. '
+                    f'{REFUND_POLICY_TEXT}')
+    else:
+        message = f'Your booking for the {vehicle_label} was cancelled and is fully refunded. {REFUND_POLICY_TEXT}'
+    db.session.add(Notification(user_id=booking.renter_id, type='booking_cancelled', title='Booking cancelled', message=message, booking_id=booking.id, simulated_email_sent=True, simulated_sms_sent=bool(booking.contact_phone)))
 
 @bookings_bp.route('/bookings', methods=['POST'])
 @jwt_required
@@ -165,6 +203,7 @@ def update_booking(booking_id):
             return (jsonify({'error': 'Forbidden'}), 403)
         VALID_STATUSES = {'pending', 'confirmed', 'active', 'completed', 'cancelled'}
         new_status = data.get('status')
+        was_confirmed = booking.status == 'confirmed'
         if new_status:
             if is_admin and new_status in VALID_STATUSES:
                 if new_status == 'confirmed' and booking.driver_id:
@@ -178,10 +217,19 @@ def update_booking(booking_id):
                 booking.status = new_status
             elif is_owner and booking.status == 'confirmed' and (new_status == 'completed'):
                 booking.status = new_status
-            elif is_renter and booking.status == 'pending' and (new_status == 'cancelled'):
+            elif is_renter and booking.status in ('pending', 'confirmed') and (new_status == 'cancelled'):
+                if booking.start_date and date.today() > booking.start_date:
+                    return (jsonify({'error': 'No refunds once the vehicle has been picked up.'}), 400)
                 booking.status = new_status
             else:
                 return (jsonify({'error': f'Cannot change status from {booking.status} to {new_status}'}), 400)
+            if booking.status == 'cancelled':
+                if booking.driver_id and booking.driver_status != 'cancelled':
+                    booking.driver_status = 'cancelled'
+                booking.cancellation_penalty_percent = 10.0 if (booking.start_date and date.today() == booking.start_date) else 0.0
+                _send_cancellation_notice(booking)
+            elif booking.status == 'confirmed' and not was_confirmed:
+                _send_confirmation_receipt(booking)
         if 'review_rating' in data:
             if not is_renter:
                 return (jsonify({'error': 'Only the renter can leave a review'}), 403)
@@ -240,6 +288,8 @@ def respond_to_booking(booking_id):
         booking = db.session.get(Booking, booking_id)
         if not booking or booking.driver_id != g.current_driver.id:
             return (jsonify({'error': 'Booking not found'}), 404)
+        if booking.status == 'cancelled':
+            return (jsonify({'error': 'This booking was cancelled by the client'}), 400)
         data = request.get_json() or {}
         new_status = data.get('driver_status')
         if new_status not in ('accepted', 'declined'):

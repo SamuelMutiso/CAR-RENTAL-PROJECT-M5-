@@ -1,4 +1,6 @@
+import re
 import secrets
+import random
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, g
 import jwt
@@ -17,6 +19,23 @@ def _make_token(user):
     payload = {'user_id': user.id, 'role': user.role, 'exp': datetime.utcnow() + Config.JWT_EXPIRY}
     return jwt.encode(payload, Config.JWT_SECRET_KEY, algorithm='HS256')
 
+def _username_taken(username, exclude_user_id=None):
+    query = User.query.filter(db.func.lower(User.username) == username.lower())
+    if exclude_user_id:
+        query = query.filter(User.id != exclude_user_id)
+    return query.first() is not None
+
+def _generate_username_suggestions(base, exclude_user_id=None, count=3):
+    base = re.sub(r'[^a-zA-Z0-9_]', '', base)[:24] or 'user'
+    suggestions = []
+    attempts = 0
+    while len(suggestions) < count and attempts < 25:
+        attempts += 1
+        candidate = f'{base}{random.randint(1, 999)}'
+        if not _username_taken(candidate, exclude_user_id) and candidate not in suggestions:
+            suggestions.append(candidate)
+    return suggestions
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     try:
@@ -29,8 +48,12 @@ def register():
         email = validated_data['email'].strip().lower()
         if User.query.filter_by(email=email).first():
             return (jsonify({'errors': {'email': ['An account with that email already exists']}}), 409)
+        username = validated_data['username'].strip()
+        if _username_taken(username):
+            suggestions = _generate_username_suggestions(username)
+            return (jsonify({'errors': {'username': ['That username is taken']}, 'suggestions': suggestions}), 409)
         password_hash = bcrypt.generate_password_hash(validated_data['password']).decode('utf-8')
-        user = User(email=email, password_hash=password_hash, name=validated_data.get('name', '').strip(), phone=validated_data.get('phone'), role=validated_data.get('role', 'client'), rental_intent=validated_data.get('rental_intent', 'both'))
+        user = User(email=email, username=username, password_hash=password_hash, name=validated_data.get('name', '').strip(), phone=validated_data.get('phone'), role=validated_data.get('role', 'client'), rental_intent=validated_data.get('rental_intent', 'both'))
         db.session.add(user)
         db.session.commit()
         token = _make_token(user)
@@ -43,6 +66,25 @@ def register():
         db.session.rollback()
         logger.error(f'Register error: {e}')
         return (jsonify({'error': 'Internal server error'}), 500)
+
+@auth_bp.route('/check-username', methods=['GET'])
+def check_username():
+    username = (request.args.get('username') or '').strip()
+    if not re.match(r'^[a-zA-Z0-9_]{3,30}$', username):
+        return (jsonify({'available': False, 'error': 'Usernames can only contain letters, numbers and underscores (3-30 characters)', 'suggestions': []}), 200)
+    exclude_user_id = None
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        payload = None
+        try:
+            payload = jwt.decode(auth_header.split(' ', 1)[1], Config.JWT_SECRET_KEY, algorithms=['HS256'])
+        except jwt.PyJWTError:
+            payload = None
+        if payload:
+            exclude_user_id = payload.get('user_id')
+    taken = _username_taken(username, exclude_user_id)
+    suggestions = _generate_username_suggestions(username, exclude_user_id) if taken else []
+    return (jsonify({'available': not taken, 'suggestions': suggestions}), 200)
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -113,6 +155,14 @@ def update_me():
             user.name = (data['name'] or '').strip() or None
         if 'phone' in data:
             user.phone = (data['phone'] or '').strip() or None
+        if 'username' in data and data['username']:
+            new_username = data['username'].strip()
+            if not re.match(r'^[a-zA-Z0-9_]{3,30}$', new_username):
+                return (jsonify({'errors': {'username': ['Usernames can only contain letters, numbers and underscores (3-30 characters)']}}), 400)
+            if _username_taken(new_username, exclude_user_id=user.id):
+                suggestions = _generate_username_suggestions(new_username, exclude_user_id=user.id)
+                return (jsonify({'errors': {'username': ['That username is taken']}, 'suggestions': suggestions}), 409)
+            user.username = new_username
         if 'license_number' in data:
             user.license_number = data['license_number']
         if 'rental_intent' in data and data['rental_intent'] in ('renter', 'owner', 'both'):

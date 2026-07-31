@@ -7,7 +7,7 @@ class BookingSchema(ma.SQLAlchemyAutoSchema):
         model = Booking
         load_instance = True
         include_fk = True
-        fields = ('id', 'start_date', 'end_date', 'total_price', 'status', 'created_at', 'notes', 'review_rating', 'vehicle_id', 'renter_id', 'contact_phone', 'hire_type', 'driver_id', 'driver_status', 'event_type', 'is_convoy', 'convoy_id', 'discount_percent', 'traveller_service', 'pickup_location', 'dropoff_location', 'meet_and_greet', 'payment_method', 'payment_status', 'mpesa_phone', 'vehicle_make', 'vehicle_model', 'vehicle_image', 'vehicle_daily_rate', 'renter_name', 'owner_id', 'driver_name', 'driver_rating')
+        fields = ('id', 'start_date', 'end_date', 'total_price', 'status', 'created_at', 'notes', 'review_rating', 'vehicle_id', 'renter_id', 'contact_phone', 'hire_type', 'driver_id', 'driver_status', 'event_type', 'is_convoy', 'convoy_id', 'discount_percent', 'traveller_service', 'pickup_location', 'dropoff_location', 'meet_and_greet', 'payment_method', 'payment_status', 'mpesa_phone', 'cancellation_penalty_percent', 'vehicle_make', 'vehicle_model', 'vehicle_image', 'vehicle_daily_rate', 'renter_name', 'owner_id', 'driver_name', 'driver_rating')
     vehicle_make = ma.Method('get_vehicle_make')
     vehicle_model = ma.Method('get_vehicle_model')
     vehicle_image = ma.Method('get_vehicle_image')
