@@ -17,5 +17,6 @@ psycopg2-binary = "==2.9.12"
 gunicorn = "==23.0.0"
 tomli = "*"
 google-auth = "*"
+requests = "*"
 
 [dev-packages]
