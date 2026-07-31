@@ -16,7 +16,16 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
   const ref = useRef(null);
+
+  function toggleExpanded(id) {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);else next.add(id);
+      return next;
+    });
+  }
 
   function load() {
     api.get("/notifications").then(res => {
@@ -67,23 +76,34 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-card bg-white text-brand-navy shadow-card">
+        <div className="absolute right-0 mt-2 w-96 overflow-hidden rounded-card bg-white text-brand-navy shadow-card">
           <div className="border-b border-brand-navy/10 px-4 py-2.5 text-sm font-semibold">Notifications</div>
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto">
             {items.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-brand-navy/50">No notifications yet.</p>
             ) : (
-              items.map(n => (
-                <div key={n.id} className={`border-b border-brand-navy/5 px-4 py-3 text-sm last:border-0 ${!n.is_read ? "bg-accent/5" : ""}`}>
+              items.map(n => {
+                const isReceipt = n.type === "receipt";
+                const isExpanded = expandedIds.has(n.id);
+                return <div key={n.id} className={`border-b border-brand-navy/5 px-4 py-3 text-sm last:border-0 ${!n.is_read ? "bg-accent/5" : ""}`}>
                   <p className="font-medium">{n.title}</p>
-                  <p className="mt-0.5 text-brand-navy/60">{n.message}</p>
+                  {isReceipt && !isExpanded ? (
+                    <button type="button" onClick={() => toggleExpanded(n.id)} className="mt-0.5 text-xs font-medium text-accent hover:underline">
+                      View receipt
+                    </button>
+                  ) : (
+                    <p className={`mt-0.5 whitespace-pre-line text-brand-navy/60 ${isReceipt ? "font-mono text-xs" : ""}`}>{n.message}</p>
+                  )}
+                  {isReceipt && isExpanded && <button type="button" onClick={() => toggleExpanded(n.id)} className="mt-1 text-xs font-medium text-accent hover:underline">
+                      Collapse
+                    </button>}
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-brand-navy/40">
                     <span>{timeAgo(n.created_at)}</span>
                     {n.simulated_email_sent && <span>&middot; Emailed</span>}
                     {n.simulated_sms_sent && <span>&middot; SMS sent</span>}
                   </div>
-                </div>
-              ))
+                </div>;
+              })
             )}
           </div>
         </div>

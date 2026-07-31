@@ -3,12 +3,14 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import RatingStars from "../components/RatingStars";
 import PasswordInput from "../components/PasswordInput";
+import UsernameInput from "../components/UsernameInput";
 export default function Profile() {
   const {
     user,
     updateUser
   } = useAuth();
   const [name, setName] = useState(user?.name || "");
+  const [username, setUsername] = useState(user?.username || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [licenseNumber, setLicenseNumber] = useState(user?.license_number || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -55,6 +57,7 @@ export default function Profile() {
     try {
       const res = await api.put("/me", {
         name,
+        username,
         phone,
         license_number: licenseNumber,
         email,
@@ -63,7 +66,8 @@ export default function Profile() {
       updateUser(res.data);
       setMessage("Profile updated");
     } catch (err) {
-      setError(err.response?.data?.error || "Could not save changes");
+      const fieldError = err.response?.data?.errors?.username?.[0];
+      setError(fieldError || err.response?.data?.error || "Could not save changes");
     } finally {
       setSaving(false);
     }
@@ -90,6 +94,10 @@ export default function Profile() {
           <div>
             <label className="mb-1 block text-sm font-medium">Full name</label>
             <input value={name} onChange={e => setName(e.target.value)} className="input-field" placeholder="Jane Wanjiru" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Username</label>
+            <UsernameInput value={username} onChange={setUsername} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>

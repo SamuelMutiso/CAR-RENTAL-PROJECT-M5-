@@ -4,6 +4,7 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import PasswordInput from "../components/PasswordInput";
+import UsernameInput from "../components/UsernameInput";
 import { AUTH_BG_IMAGES, isValidEmail, isValidKenyanPhone } from "../constants";
 import { useLanguage } from "../context/LanguageContext";
 const INTENT_OPTIONS = [{
@@ -19,6 +20,7 @@ const INTENT_OPTIONS = [{
 export default function Signup() {
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [phone, setPhone] = useState("");
@@ -46,6 +48,10 @@ export default function Signup() {
       setError("Enter your full name");
       return;
     }
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+      setError("Choose a username (3-30 characters: letters, numbers, underscores)");
+      return;
+    }
     if (!isValidEmail(email)) {
       setError("Enter a valid email address, e.g. name@example.com");
       return;
@@ -62,6 +68,7 @@ export default function Signup() {
     try {
       const res = await api.post("/register", {
         name,
+        username,
         email,
         phone,
         password,
@@ -72,7 +79,7 @@ export default function Signup() {
       navigate("/profile");
     } catch (err) {
       const errors = err.response?.data?.errors;
-      const fieldError = errors?.email?.[0] || errors?.phone?.[0] || errors?.name?.[0];
+      const fieldError = errors?.email?.[0] || errors?.username?.[0] || errors?.phone?.[0] || errors?.name?.[0];
       setError(fieldError || err.response?.data?.error || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
@@ -102,6 +109,10 @@ export default function Signup() {
               <label className="mb-1 block text-sm font-medium">{t("auth_full_name")}</label>
               <input required value={name} onChange={e => setName(e.target.value)} onBlur={() => setNameTouched(true)} className={`input-field ${nameInvalid ? "border-red-400 focus:ring-red-400" : ""}`} aria-invalid={nameInvalid} placeholder="Jane Wanjiru" />
               {nameInvalid && <p className="mt-1 text-xs text-red-600">Enter your full name</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Username</label>
+              <UsernameInput value={username} onChange={setUsername} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">{t("auth_email")}</label>

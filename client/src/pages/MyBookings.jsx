@@ -12,11 +12,18 @@ export default function MyBookings() {
     api.get("/bookings/me").then(res => setBookings(res.data)).finally(() => setLoading(false));
   }
   useEffect(load, []);
-  async function cancelBooking(id) {
-    await api.put(`/bookings/${id}`, {
-      status: "cancelled"
-    });
-    load();
+  async function cancelBooking(id, startDate) {
+    const isPickupDay = startDate === new Date().toISOString().slice(0, 10);
+    const confirmMessage = isPickupDay ? "This is your pickup day - cancelling now incurs a 10% cancellation fee. Continue?" : "Cancel this booking? You'll receive a full refund since it's before your pickup date.";
+    if (!confirm(confirmMessage)) return;
+    try {
+      await api.put(`/bookings/${id}`, {
+        status: "cancelled"
+      });
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || "Could not cancel this booking.");
+    }
   }
   async function submitReview(id, rating) {
     await api.put(`/bookings/${id}`, {
@@ -58,12 +65,15 @@ export default function MyBookings() {
                   {b.discount_percent > 0 && <span className="ml-1 text-xs font-normal text-green-700">({b.discount_percent}% convoy discount applied)</span>}
                 </p>
                 {b.payment_status === "paid" ? <p className="text-xs font-medium text-green-700">Paid via M-Pesa{b.mpesa_phone ? ` · ${b.mpesa_phone}` : ""}</p> : <p className="text-xs font-medium text-amber-700">Payment pending</p>}
+                {b.status === "cancelled" && <p className="text-xs font-medium text-brand-navy/60">
+                    {b.cancellation_penalty_percent > 0 ? `Cancelled on pickup day - ${b.cancellation_penalty_percent}% fee applied` : "Cancelled - fully refunded"}
+                  </p>}
               </div>
 
               <div className="flex items-center gap-gutter">
                 <StatusBadge status={b.status} />
 
-                {b.status === "pending" && <button onClick={() => cancelBooking(b.id)} className="btn-secondary py-2 text-sm">Cancel</button>}
+                {(b.status === "pending" || b.status === "confirmed") && <button onClick={() => cancelBooking(b.id, b.start_date)} className="btn-secondary py-2 text-sm">Cancel</button>}
 
                 {b.status === "completed" && !b.review_rating && reviewingId !== b.id && <button onClick={() => setReviewingId(b.id)} className="btn-secondary py-2 text-sm">Leave a review</button>}
 

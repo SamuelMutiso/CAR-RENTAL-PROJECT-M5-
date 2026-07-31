@@ -6,14 +6,14 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import HeroCarousel from "../components/HeroCarousel";
 import { useLanguage } from "../context/LanguageContext";
 const STEPS = [{
-  title: "Search",
-  body: "Browse verified vehicles by city, category and price."
+  titleKey: "home_step_search",
+  bodyKey: "home_step_search_body"
 }, {
-  title: "Book",
-  body: "Pick your dates, see the total upfront, and request to book."
+  titleKey: "home_step_book",
+  bodyKey: "home_step_book_body"
 }, {
-  title: "Drive",
-  body: "Get confirmed by the owner and pick up your car."
+  titleKey: "home_step_drive",
+  bodyKey: "home_step_drive_body"
 }];
 export default function Landing() {
   const [vehicles, setVehicles] = useState([]);
@@ -40,45 +40,43 @@ export default function Landing() {
         </div>
       </HeroCarousel>
 
-      
+
       <section className="section-wrap py-section">
-        <h2 className="mb-gutter-lg text-center text-3xl">How it works</h2>
+        <h2 className="mb-gutter-lg text-center text-3xl">{t("home_how_it_works")}</h2>
         <div className="grid gap-gutter sm:grid-cols-3">
-          {STEPS.map((step, i) => <div key={step.title} className="card p-gutter text-center">
+          {STEPS.map((step, i) => <div key={step.titleKey} className="card p-gutter text-center">
               <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-accent font-display font-semibold text-white">
                 {i + 1}
               </div>
-              <h3 className="mb-1 text-lg font-semibold">{step.title}</h3>
-              <p className="text-sm text-brand-navy/60">{step.body}</p>
+              <h3 className="mb-1 text-lg font-semibold">{t(step.titleKey)}</h3>
+              <p className="text-sm text-brand-navy/60">{t(step.bodyKey)}</p>
             </div>)}
         </div>
       </section>
 
-      
+
       <section className="bg-brand-navy-light">
         <div className="section-wrap flex flex-col items-center justify-between gap-gutter py-section-lg text-center sm:flex-row sm:text-left">
           <div>
-            <h2 className="text-2xl text-white sm:text-3xl">Planning something bigger than one car?</h2>
+            <h2 className="text-2xl text-white sm:text-3xl">{t("home_convoy_heading")}</h2>
             <p className="mt-2 max-w-xl text-white/70">
-              Weddings, funerals, safaris, or group transportation - book a full convoy in one
-              go, with a self-drive or chauffeur option for every vehicle, and an automatic
-              discount the more cars you book together.
+              {t("home_convoy_body")}
             </p>
           </div>
-          <Link to="/events/new" className="btn-primary whitespace-nowrap">Book a convoy</Link>
+          <Link to="/events/new" className="btn-primary whitespace-nowrap">{t("home_convoy_cta")}</Link>
         </div>
       </section>
 
-      
+
       <section className="section-wrap pb-section">
         <div className="mb-gutter-lg flex items-center justify-between">
-          <h2 className="text-3xl">Featured vehicles</h2>
+          <h2 className="text-3xl">{t("home_featured")}</h2>
           <Link to="/vehicles" className="text-sm font-medium text-accent hover:underline">
-            See all &rarr;
+            {t("home_see_all")} &rarr;
           </Link>
         </div>
 
-        {loading ? <LoadingSpinner label="Loading featured cars..." /> : vehicles.length === 0 ? <p className="text-brand-navy/60">No cars available yet - check back soon.</p> : <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+        {loading ? <LoadingSpinner label="Loading featured cars..." /> : vehicles.length === 0 ? <p className="text-brand-navy/60">{t("home_no_cars")}</p> : <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
             {vehicles.map(v => <VehicleCard key={v.id} vehicle={v} />)}
           </div>}
       </section>
