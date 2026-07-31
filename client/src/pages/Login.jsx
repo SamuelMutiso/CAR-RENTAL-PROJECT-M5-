@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import PasswordInput from "../components/PasswordInput";
 import { LOGIN_BG_IMAGE, isValidEmail } from "../constants";
+import { useLanguage } from "../context/LanguageContext";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -16,6 +17,7 @@ export default function Login() {
   } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const emailInvalid = emailTouched && email.length > 0 && !isValidEmail(email);
   async function handleSubmit(e) {
     e.preventDefault();
@@ -61,22 +63,22 @@ export default function Login() {
 
       <div className="section-wrap relative flex min-h-[80vh] items-center justify-center py-section">
         <div className="card w-full max-w-md space-y-gutter p-gutter-lg">
-          <h1 className="text-2xl">Log in</h1>
+          <h1 className="text-2xl">{t("auth_login_heading")}</h1>
 
         {error && <p className="rounded-card bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-gutter">
           <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
+            <label className="mb-1 block text-sm font-medium">{t("auth_email")}</label>
             <input type="email" required value={email} onChange={e => setEmail(e.target.value)} onBlur={() => setEmailTouched(true)} className={`input-field ${emailInvalid ? "border-red-400 focus:ring-red-400" : ""}`} aria-invalid={emailInvalid} placeholder="you@example.com" />
             {emailInvalid && <p className="mt-1 text-xs text-red-600">Enter a valid email address, e.g. name@example.com</p>}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Password</label>
+            <label className="mb-1 block text-sm font-medium">{t("auth_password")}</label>
             <PasswordInput required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
           <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? "Logging in..." : "Log in"}
+            {loading ? "Logging in..." : t("auth_login_heading")}
           </button>
         </form>
 
@@ -84,7 +86,7 @@ export default function Login() {
 
           <div className="flex justify-between text-sm text-brand-navy/60">
             <Link to="/reset-password" className="hover:text-accent">Forgot password?</Link>
-            <Link to="/signup" className="hover:text-accent">Sign up</Link>
+            <Link to="/signup" className="hover:text-accent">{t("nav_signup")}</Link>
           </div>
 
           <div className="border-t border-brand-navy/10 pt-gutter text-center text-sm text-brand-navy/60">

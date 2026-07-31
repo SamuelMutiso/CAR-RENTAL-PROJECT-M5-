@@ -4,7 +4,8 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import PasswordInput from "../components/PasswordInput";
-import { AUTH_BG_IMAGES, isValidEmail } from "../constants";
+import { AUTH_BG_IMAGES, isValidEmail, isValidKenyanPhone } from "../constants";
+import { useLanguage } from "../context/LanguageContext";
 const INTENT_OPTIONS = [{
   value: "renter",
   label: "Rent cars"
@@ -16,8 +17,12 @@ const INTENT_OPTIONS = [{
   label: "Both"
 }];
 export default function Signup() {
+  const [name, setName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [intent, setIntent] = useState("both");
@@ -27,13 +32,26 @@ export default function Signup() {
     login
   } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const emailInvalid = emailTouched && email.length > 0 && !isValidEmail(email);
+  const nameInvalid = nameTouched && name.trim().length > 0 && name.trim().length < 2;
+  const phoneInvalid = phoneTouched && phone.length > 0 && !isValidKenyanPhone(phone);
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setNameTouched(true);
     setEmailTouched(true);
+    setPhoneTouched(true);
+    if (name.trim().length < 2) {
+      setError("Enter your full name");
+      return;
+    }
     if (!isValidEmail(email)) {
       setError("Enter a valid email address, e.g. name@example.com");
+      return;
+    }
+    if (!isValidKenyanPhone(phone)) {
+      setError("Enter a valid phone number, e.g. +254712345678");
       return;
     }
     if (password !== confirmPassword) {
@@ -43,7 +61,9 @@ export default function Signup() {
     setLoading(true);
     try {
       const res = await api.post("/register", {
+        name,
         email,
+        phone,
         password,
         role: "client",
         rental_intent: intent
@@ -51,7 +71,8 @@ export default function Signup() {
       login(res.data.user, res.data.token);
       navigate("/profile");
     } catch (err) {
-      const fieldError = err.response?.data?.errors?.email?.[0];
+      const errors = err.response?.data?.errors;
+      const fieldError = errors?.email?.[0] || errors?.phone?.[0] || errors?.name?.[0];
       setError(fieldError || err.response?.data?.error || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
@@ -72,18 +93,28 @@ export default function Signup() {
 
       <div className="section-wrap relative flex min-h-[80vh] items-center justify-center py-section">
         <div className="card w-full max-w-md space-y-gutter p-gutter-lg">
-          <h1 className="text-2xl">Create your account</h1>
+          <h1 className="text-2xl">{t("auth_signup_heading")}</h1>
 
           {error && <p className="rounded-card bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>}
 
           <form onSubmit={handleSubmit} className="space-y-gutter">
             <div>
-              <label className="mb-1 block text-sm font-medium">Email</label>
+              <label className="mb-1 block text-sm font-medium">{t("auth_full_name")}</label>
+              <input required value={name} onChange={e => setName(e.target.value)} onBlur={() => setNameTouched(true)} className={`input-field ${nameInvalid ? "border-red-400 focus:ring-red-400" : ""}`} aria-invalid={nameInvalid} placeholder="Jane Wanjiru" />
+              {nameInvalid && <p className="mt-1 text-xs text-red-600">Enter your full name</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">{t("auth_email")}</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)} onBlur={() => setEmailTouched(true)} className={`input-field ${emailInvalid ? "border-red-400 focus:ring-red-400" : ""}`} aria-invalid={emailInvalid} />
               {emailInvalid && <p className="mt-1 text-xs text-red-600">Enter a valid email address, e.g. name@example.com</p>}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Password</label>
+              <label className="mb-1 block text-sm font-medium">{t("auth_phone")}</label>
+              <input required value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} className={`input-field ${phoneInvalid ? "border-red-400 focus:ring-red-400" : ""}`} aria-invalid={phoneInvalid} placeholder="+254712345678" />
+              {phoneInvalid && <p className="mt-1 text-xs text-red-600">Enter a valid phone number, e.g. +254712345678</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">{t("auth_password")}</label>
               <PasswordInput required value={password} onChange={e => setPassword(e.target.value)} />
             </div>
             <div>

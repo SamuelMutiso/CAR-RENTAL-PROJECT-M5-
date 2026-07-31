@@ -8,6 +8,8 @@ export default function Profile() {
     user,
     updateUser
   } = useAuth();
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
   const [licenseNumber, setLicenseNumber] = useState(user?.license_number || "");
   const [email, setEmail] = useState(user?.email || "");
   const [rentalIntent, setRentalIntent] = useState(user?.rental_intent || "both");
@@ -52,6 +54,8 @@ export default function Profile() {
     setMessage("");
     try {
       const res = await api.put("/me", {
+        name,
+        phone,
         license_number: licenseNumber,
         email,
         rental_intent: rentalIntent
@@ -84,8 +88,16 @@ export default function Profile() {
 
         <form onSubmit={handleSave} className="space-y-gutter">
           <div>
+            <label className="mb-1 block text-sm font-medium">Full name</label>
+            <input value={name} onChange={e => setName(e.target.value)} className="input-field" placeholder="Jane Wanjiru" />
+          </div>
+          <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="input-field" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Phone number</label>
+            <input value={phone} onChange={e => setPhone(e.target.value)} className="input-field" placeholder="+254712345678" />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Driving license number</label>

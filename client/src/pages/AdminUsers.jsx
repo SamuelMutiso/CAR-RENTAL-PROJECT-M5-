@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import api from "../api";
+import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 export default function AdminUsers() {
+  const { user: currentAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -19,10 +21,14 @@ export default function AdminUsers() {
   }
   useEffect(load, [page]);
   async function toggleBan(user) {
-    await api.put(`/admin/users/${user.id}`, {
-      is_banned: !user.is_banned
-    });
-    load();
+    try {
+      await api.put(`/admin/users/${user.id}`, {
+        is_banned: !user.is_banned
+      });
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || "Could not update user");
+    }
   }
   async function verify(user) {
     await api.put(`/admin/users/${user.id}`, {
@@ -32,8 +38,12 @@ export default function AdminUsers() {
   }
   async function remove(user) {
     if (!confirm(`Delete ${user.email}? This also deletes their listings and bookings.`)) return;
-    await api.delete(`/admin/users/${user.id}`);
-    load();
+    try {
+      await api.delete(`/admin/users/${user.id}`);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || "Could not delete user");
+    }
   }
   if (loading) return <LoadingSpinner label="Loading users..." />;
   return <div className="section-wrap py-section">
@@ -53,21 +63,30 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody className="divide-y divide-brand-navy/10">
-            {users.map(u => <tr key={u.id}>
-                <td className="px-4 py-3">{u.email}</td>
+            {users.map(u => {
+              const isSelf = currentAdmin && u.id === currentAdmin.id;
+              const isOwner = u.vehicle_count > 0;
+              const protectedUser = isSelf || isOwner;
+              return <tr key={u.id}>
+                <td className="px-4 py-3">
+                  {u.email}
+                  {isSelf && <span className="ml-2 rounded-full bg-brand-navy/10 px-2 py-0.5 text-[11px] font-medium">You</span>}
+                  {isOwner && !isSelf && <span className="ml-2 rounded-full bg-brand-navy/10 px-2 py-0.5 text-[11px] font-medium">Owner</span>}
+                </td>
                 <td className="px-4 py-3 capitalize">{u.role}</td>
                 <td className="px-4 py-3 capitalize">{u.verification_status}</td>
                 <td className="px-4 py-3">{u.is_banned ? "Yes" : "No"}</td>
                 <td className="px-4 py-3">{u.vehicle_count}</td>
                 <td className="px-4 py-3">{u.booking_count}</td>
                 <td className="space-x-2 px-4 py-3">
-                  <button onClick={() => toggleBan(u)} className="text-accent hover:underline">
-                    {u.is_banned ? "Unban" : "Ban"}
-                  </button>
+                  {!u.is_banned && protectedUser ? <span className="text-brand-navy/30">Protected</span> : <button onClick={() => toggleBan(u)} className="text-accent hover:underline">
+                      {u.is_banned ? "Unban" : "Ban"}
+                    </button>}
                   {u.verification_status !== "verified" && <button onClick={() => verify(u)} className="text-accent hover:underline">Verify</button>}
-                  <button onClick={() => remove(u)} className="text-red-600 hover:underline">Delete</button>
+                  {!protectedUser && <button onClick={() => remove(u)} className="text-red-600 hover:underline">Delete</button>}
                 </td>
-              </tr>)}
+              </tr>;
+            })}
           </tbody>
         </table>
       </div>

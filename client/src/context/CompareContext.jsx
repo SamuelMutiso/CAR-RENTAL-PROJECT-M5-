@@ -1,23 +1,48 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./AuthContext";
 const CompareContext = createContext(null);
-const COMPARE_KEY = "gearshift_compare";
 const MAX_COMPARE = 3;
-function readIds() {
+
+// Compare lists are namespaced per signed-in identity so that switching
+// accounts on the same browser (or logging out to a guest session) never
+// leaks another person's comparison into view.
+function storageKeyFor(user, driver) {
+  if (user) return `gearshift_compare_u${user.id}`;
+  if (driver) return `gearshift_compare_d${driver.id}`;
+  return "gearshift_compare_guest";
+}
+
+function readIds(key) {
   try {
-    const raw = localStorage.getItem(COMPARE_KEY);
+    const raw = localStorage.getItem(key);
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
+
 export function CompareProvider({
   children
 }) {
-  const [compareIds, setCompareIds] = useState(readIds);
+  const { user, driver } = useAuth();
+  const key = storageKeyFor(user, driver);
+  const [activeKey, setActiveKey] = useState(key);
+  const [compareIds, setCompareIds] = useState(() => readIds(key));
+
   useEffect(() => {
-    localStorage.setItem(COMPARE_KEY, JSON.stringify(compareIds));
-  }, [compareIds]);
+    if (key !== activeKey) {
+      setActiveKey(key);
+      setCompareIds(readIds(key));
+    }
+  }, [key, activeKey]);
+
+  useEffect(() => {
+    if (key === activeKey) {
+      localStorage.setItem(activeKey, JSON.stringify(compareIds));
+    }
+  }, [compareIds, activeKey, key]);
+
   function toggleCompare(id) {
     setCompareIds(prev => prev.includes(id) ? prev.filter(v => v !== id) : prev.length >= MAX_COMPARE ? prev : [...prev, id]);
   }

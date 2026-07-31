@@ -27,6 +27,7 @@ const BecomeDriver = lazy(() => import("./pages/BecomeDriver"));
 const AdminDriverApplications = lazy(() => import("./pages/AdminDriverApplications"));
 const DriverLogin = lazy(() => import("./pages/DriverLogin"));
 const DriverPortal = lazy(() => import("./pages/DriverPortal"));
+const DriverProfile = lazy(() => import("./pages/DriverProfile"));
 const Services = lazy(() => import("./pages/Services"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/driver-login" element={<DriverLogin />} />
 
             <Route path="/driver-portal" element={<DriverProtectedRoute><DriverPortal /></DriverProtectedRoute>} />
+            <Route path="/driver-profile" element={<DriverProtectedRoute><DriverProfile /></DriverProtectedRoute>} />
 
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/vehicles/new" element={<ProtectedRoute><VehicleNew /></ProtectedRoute>} />

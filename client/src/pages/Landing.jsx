@@ -4,6 +4,7 @@ import api from "../api";
 import VehicleCard from "../components/VehicleCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import HeroCarousel from "../components/HeroCarousel";
+import { useLanguage } from "../context/LanguageContext";
 const STEPS = [{
   title: "Search",
   body: "Browse verified vehicles by city, category and price."
@@ -17,24 +18,24 @@ const STEPS = [{
 export default function Landing() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
   useEffect(() => {
     api.get("/vehicles").then(res => setVehicles(res.data.vehicles.slice(0, 6))).catch(() => setVehicles([])).finally(() => setLoading(false));
   }, []);
   return <div>
-      
+
       <HeroCarousel>
-        
+
         <h1 className="max-w-2xl text-4xl text-white sm:text-5xl">
-          Rent the right car, from people near you.
+          {t("home_heading")}
         </h1>
         <p className="max-w-xl text-white/80">
-          GearShift connects verified car owners with renters across Kenya - browse a fleet of
-          50+ vehicles, book in minutes, and drive.
+          {t("home_sub")}
         </p>
         <div className="flex gap-gutter">
-          <Link to="/vehicles" className="btn-primary">Browse cars</Link>
+          <Link to="/vehicles" className="btn-primary">{t("home_cta_browse")}</Link>
           <Link to="/vehicles/new" className="btn-secondary bg-transparent text-white hover:bg-white/10">
-            List your car
+            {t("home_cta_list")}
           </Link>
         </div>
       </HeroCarousel>
