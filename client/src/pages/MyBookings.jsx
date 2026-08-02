@@ -3,15 +3,21 @@ import { Link } from "react-router-dom";
 import api from "../api";
 import StatusBadge from "../components/StatusBadge";
 import LoadingSpinner from "../components/LoadingSpinner";
+import usePolling from "../hooks/usePolling";
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState(null);
-  function load() {
-    setLoading(true);
-    api.get("/bookings/me").then(res => setBookings(res.data)).finally(() => setLoading(false));
+  function load(showSpinner = true) {
+    if (showSpinner) setLoading(true);
+    api.get("/bookings/me").then(res => setBookings(res.data)).finally(() => {
+      if (showSpinner) setLoading(false);
+    });
   }
-  useEffect(load, []);
+  useEffect(() => load(), []);
+  // Live-update: pick up status changes (e.g. owner/admin confirms or
+  // cancels a booking) without the user needing to refresh the page.
+  usePolling(() => load(false), 5000);
   async function cancelBooking(id, startDate) {
     const isPickupDay = startDate === new Date().toISOString().slice(0, 10);
     const confirmMessage = isPickupDay ? "This is your pickup day - cancelling now incurs a 10% cancellation fee. Continue?" : "Cancel this booking? You'll receive a full refund since it's before your pickup date.";

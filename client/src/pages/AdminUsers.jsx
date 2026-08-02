@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
+import usePolling from "../hooks/usePolling";
 export default function AdminUsers() {
   const { user: currentAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  function load() {
-    setLoading(true);
+  function load(showSpinner = true) {
+    if (showSpinner) setLoading(true);
     api.get("/admin/users", {
       params: {
         page
@@ -17,9 +18,13 @@ export default function AdminUsers() {
     }).then(res => {
       setUsers(res.data.users);
       setTotalPages(res.data.total_pages);
-    }).finally(() => setLoading(false));
+    }).finally(() => {
+      if (showSpinner) setLoading(false);
+    });
   }
-  useEffect(load, [page]);
+  useEffect(() => load(), [page]);
+  // Live-update: keeps this list current if another admin makes a change.
+  usePolling(() => load(false), 5000);
   async function toggleBan(user) {
     try {
       await api.put(`/admin/users/${user.id}`, {
@@ -29,12 +34,6 @@ export default function AdminUsers() {
     } catch (err) {
       alert(err.response?.data?.error || "Could not update user");
     }
-  }
-  async function verify(user) {
-    await api.put(`/admin/users/${user.id}`, {
-      verification_status: "verified"
-    });
-    load();
   }
   async function remove(user) {
     if (!confirm(`Delete ${user.email}? This also deletes their listings and bookings.`)) return;
@@ -55,7 +54,6 @@ export default function AdminUsers() {
             <tr>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Banned</th>
               <th className="px-4 py-3">Listings</th>
               <th className="px-4 py-3">Bookings</th>
@@ -74,7 +72,6 @@ export default function AdminUsers() {
                   {isOwner && !isSelf && <span className="ml-2 rounded-full bg-brand-navy/10 px-2 py-0.5 text-[11px] font-medium">Owner</span>}
                 </td>
                 <td className="px-4 py-3 capitalize">{u.role}</td>
-                <td className="px-4 py-3 capitalize">{u.verification_status}</td>
                 <td className="px-4 py-3">{u.is_banned ? "Yes" : "No"}</td>
                 <td className="px-4 py-3">{u.vehicle_count}</td>
                 <td className="px-4 py-3">{u.booking_count}</td>
@@ -82,7 +79,6 @@ export default function AdminUsers() {
                   {!u.is_banned && protectedUser ? <span className="text-brand-navy/30">Protected</span> : <button onClick={() => toggleBan(u)} className="text-accent hover:underline">
                       {u.is_banned ? "Unban" : "Ban"}
                     </button>}
-                  {u.verification_status !== "verified" && <button onClick={() => verify(u)} className="text-accent hover:underline">Verify</button>}
                   {!protectedUser && <button onClick={() => remove(u)} className="text-red-600 hover:underline">Delete</button>}
                 </td>
               </tr>;

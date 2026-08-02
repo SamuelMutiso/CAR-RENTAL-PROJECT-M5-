@@ -140,6 +140,10 @@ export default function Signup() {
                   </button>)}
               </div>
             </div>
+            <p className="text-xs text-brand-navy/50">
+              By signing up, you agree that we'll collect your name, username, email, and phone number
+              to operate your account. See our <Link to="/data-protection" className="text-accent hover:underline">Privacy Policy</Link> for details.
+            </p>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? "Creating account..." : "Sign up"}
             </button>

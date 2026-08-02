@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { driverApi } from "../api";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import StatusBadge from "../components/StatusBadge";
 import RatingStars from "../components/RatingStars";
+import usePolling from "../hooks/usePolling";
 export default function DriverPortal() {
   const {
     driver
@@ -12,13 +13,23 @@ export default function DriverPortal() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actingOn, setActingOn] = useState(null);
-  function load() {
-    setLoading(true);
-    driverApi.get("/driver/bookings").then(res => setBookings(res.data)).finally(() => setLoading(false));
+  const actingOnRef = useRef(null);
+  function load(showSpinner = true) {
+    if (showSpinner) setLoading(true);
+    driverApi.get("/driver/bookings").then(res => setBookings(res.data)).finally(() => {
+      if (showSpinner) setLoading(false);
+    });
   }
-  useEffect(load, []);
+  useEffect(() => load(), []);
+  // Live-update: new job requests and client-side cancellations show up
+  // here without the driver needing to refresh. Skip a poll while a
+  // response is mid-flight to avoid clobbering the button state.
+  usePolling(() => {
+    if (!actingOnRef.current) load(false);
+  }, 5000);
   async function respond(bookingId, status) {
     setActingOn(bookingId);
+    actingOnRef.current = bookingId;
     try {
       await driverApi.put(`/driver/bookings/${bookingId}`, {
         driver_status: status
@@ -26,6 +37,7 @@ export default function DriverPortal() {
       load();
     } finally {
       setActingOn(null);
+      actingOnRef.current = null;
     }
   }
   const pending = bookings.filter(b => b.driver_status === "pending");

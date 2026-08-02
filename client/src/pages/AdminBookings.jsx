@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import api from "../api";
 import StatusBadge from "../components/StatusBadge";
 import LoadingSpinner from "../components/LoadingSpinner";
+import usePolling from "../hooks/usePolling";
 export default function AdminBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  function load() {
-    setLoading(true);
+  function load(showSpinner = true) {
+    if (showSpinner) setLoading(true);
     api.get("/admin/bookings", {
       params: {
         page
@@ -16,9 +17,14 @@ export default function AdminBookings() {
     }).then(res => {
       setBookings(res.data.bookings);
       setTotalPages(res.data.total_pages);
-    }).finally(() => setLoading(false));
+    }).finally(() => {
+      if (showSpinner) setLoading(false);
+    });
   }
-  useEffect(load, [page]);
+  useEffect(() => load(), [page]);
+  // Live-update: reflects renter/driver-side changes (new requests,
+  // cancellations) on the current page without a manual refresh.
+  usePolling(() => load(false), 5000);
   async function setStatus(id, status, confirmMessage) {
     if (confirmMessage && !confirm(confirmMessage)) return;
     try {

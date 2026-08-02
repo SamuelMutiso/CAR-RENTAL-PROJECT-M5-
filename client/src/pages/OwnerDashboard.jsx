@@ -3,22 +3,28 @@ import { Link } from "react-router-dom";
 import api from "../api";
 import StatusBadge from "../components/StatusBadge";
 import LoadingSpinner from "../components/LoadingSpinner";
+import usePolling from "../hooks/usePolling";
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=300&q=60";
 export default function OwnerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [vehicles, setVehicles] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
-  function load() {
-    setLoadingBookings(true);
-    api.get("/bookings/owner").then(res => setBookings(res.data)).finally(() => setLoadingBookings(false));
+  function load(showSpinner = true) {
+    if (showSpinner) setLoadingBookings(true);
+    api.get("/bookings/owner").then(res => setBookings(res.data)).finally(() => {
+      if (showSpinner) setLoadingBookings(false);
+    });
   }
   function loadVehicles() {
     setLoadingVehicles(true);
     api.get("/vehicles/mine").then(res => setVehicles(res.data)).finally(() => setLoadingVehicles(false));
   }
-  useEffect(load, []);
+  useEffect(() => load(), []);
   useEffect(loadVehicles, []);
+  // Live-update: new booking requests and renter cancellations appear
+  // here without the owner needing to refresh.
+  usePolling(() => load(false), 5000);
   async function setStatus(id, status) {
     await api.put(`/bookings/${id}`, {
       status
